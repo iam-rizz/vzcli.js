@@ -17,7 +17,8 @@ try {
 
 class Output {
   constructor(options = {}) {
-    this.noColor = options.noColor || false;
+    // Default to colors enabled unless explicitly disabled
+    this.noColor = options.color === false;
     this.verboseMode = options.verbose || false;
     this.debugMode = options.debug || false;
   }
@@ -67,11 +68,48 @@ class Output {
       return;
     }
 
-    if (headers) {
-      console.table(data, headers);
-    } else {
-      console.table(data);
-    }
+    // Create a simple table formatter that handles colors properly
+    this.printTable(data, headers);
+  }
+
+  printTable(data, headers = null) {
+    if (!Array.isArray(data) || data.length === 0) return;
+
+    // Get all unique keys from data
+    const allKeys = headers || [...new Set(data.flatMap(Object.keys))];
+    
+    // Calculate column widths based on clean text (without ANSI codes)
+    const columnWidths = {};
+    allKeys.forEach(key => {
+      const headerLength = key.length;
+      const maxDataLength = Math.max(...data.map(row => {
+        const value = row[key];
+        // Strip ANSI codes for length calculation only
+        const cleanValue = typeof value === 'string' ? value.replace(/\x1B\[[0-9;]*m/g, '') : String(value || '');
+        return cleanValue.length;
+      }));
+      columnWidths[key] = Math.max(headerLength, maxDataLength, 3);
+    });
+
+    // Print header
+    const headerRow = allKeys.map(key => key.padEnd(columnWidths[key])).join(' │ ');
+    console.log(`┌─${allKeys.map(key => '─'.repeat(columnWidths[key])).join('─┬─')}─┐`);
+    console.log(`│ ${headerRow} │`);
+    console.log(`├─${allKeys.map(key => '─'.repeat(columnWidths[key])).join('─┼─')}─┤`);
+
+    // Print data rows
+    data.forEach(row => {
+      const dataRow = allKeys.map(key => {
+        const value = row[key] || '';
+        const cleanValue = typeof value === 'string' ? value.replace(/\x1B\[[0-9;]*m/g, '') : String(value);
+        const padding = columnWidths[key] - cleanValue.length;
+        // Keep original value with colors, just add padding based on clean length
+        return value + ' '.repeat(Math.max(0, padding));
+      }).join(' │ ');
+      console.log(`│ ${dataRow} │`);
+    });
+
+    console.log(`└─${allKeys.map(key => '─'.repeat(columnWidths[key])).join('─┴─')}─┘`);
   }
 
   json(data) {

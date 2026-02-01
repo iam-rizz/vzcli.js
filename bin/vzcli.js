@@ -22,9 +22,10 @@ yargs
     describe: 'Use specific host profile',
     type: 'string'
   })
-  .option('no-color', {
-    describe: 'Disable colored output',
-    type: 'boolean'
+  .option('color', {
+    describe: 'Enable colored output',
+    type: 'boolean',
+    default: true
   })
   .option('verbose', {
     alias: 'v',

@@ -141,7 +141,7 @@ class VmService {
       return {
         vpsid: vm.vpsid,
         hostname: vm.hostname || `vm-${vm.vpsid}`,
-        status: vm.status || 'unknown',
+        status: vm.status === 1 ? 'up' : 'down',
         ip: ipv4 || vm.ip || 'N/A',
         os: vm.os || 'Unknown',
         ram: vm.ram || 0,
