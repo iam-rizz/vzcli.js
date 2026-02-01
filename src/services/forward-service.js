@@ -118,13 +118,14 @@ class ForwardService {
         };
       }
 
-      const vmInfo = await this.vmService.getVMInfo(config.vpsid, host);
+      const vms = await this.vmService.listVMs({ host, status: null });
+      const vmInfo = vms.find(vm => vm.vpsid === config.vpsid);
       if (!vmInfo) {
         throw new Error(`VM ${config.vpsid} not found`);
       }
 
-      const destIp = this.extractVMIP(vmInfo);
-      if (!destIp) {
+      const destIp = vmInfo.ip;
+      if (!destIp || destIp === 'N/A') {
         throw new Error('Could not determine VM internal IP');
       }
 
@@ -213,13 +214,14 @@ class ForwardService {
         };
       }
 
-      const vmInfo = await this.vmService.getVMInfo(config.vpsid, host);
+      const vms = await this.vmService.listVMs({ host, status: null });
+      const vmInfo = vms.find(vm => vm.vpsid === config.vpsid);
       if (!vmInfo) {
         throw new Error(`VM ${config.vpsid} not found`);
       }
 
-      const destIp = this.extractVMIP(vmInfo);
-      if (!destIp) {
+      const destIp = vmInfo.ip;
+      if (!destIp || destIp === 'N/A') {
         throw new Error('Could not determine VM internal IP');
       }
 
@@ -365,12 +367,20 @@ class ForwardService {
   }
 
   parseForwardingRules(data) {
-    if (!data.domain_forwarding || typeof data.domain_forwarding !== 'object') {
+    if (!data.haproxydata || typeof data.haproxydata !== 'object') {
       return [];
     }
 
-    return Object.values(data.domain_forwarding).map(rule => ({
-      vdfid: rule.vdfid,
+    // Handle both dict and list responses from API
+    let ruleItems;
+    if (Array.isArray(data.haproxydata)) {
+      ruleItems = data.haproxydata;
+    } else {
+      ruleItems = Object.values(data.haproxydata);
+    }
+
+    return ruleItems.map(rule => ({
+      vdfid: rule.vdfid || rule.id,
       protocol: rule.protocol?.toUpperCase() || 'TCP',
       src_hostname: rule.src_hostname || '',
       src_port: parseInt(rule.src_port) || 0,
@@ -398,16 +408,33 @@ class ForwardService {
   }
 
   extractVMIP(vmInfo) {
-    if (vmInfo.vm && vmInfo.vm.ip) {
-      return vmInfo.vm.ip;
+    // First try to get IP from ips object (like Python implementation)
+    if (vmInfo.ips && typeof vmInfo.ips === 'object') {
+      for (const ip of Object.values(vmInfo.ips)) {
+        if (typeof ip === 'string' && ip.includes('.') && !ip.includes(':')) {
+          return ip;
+        }
+      }
     }
-    
-    if (vmInfo.ip) {
+
+    // Fallback to direct ip field
+    if (vmInfo.ip && vmInfo.ip !== 'N/A') {
       return vmInfo.ip;
     }
 
-    if (vmInfo.vm && vmInfo.vm.ips && Array.isArray(vmInfo.vm.ips) && vmInfo.vm.ips.length > 0) {
-      return vmInfo.vm.ips[0];
+    // Try nested vm object
+    if (vmInfo.vm) {
+      if (vmInfo.vm.ips && typeof vmInfo.vm.ips === 'object') {
+        for (const ip of Object.values(vmInfo.vm.ips)) {
+          if (typeof ip === 'string' && ip.includes('.') && !ip.includes(':')) {
+            return ip;
+          }
+        }
+      }
+      
+      if (vmInfo.vm.ip && vmInfo.vm.ip !== 'N/A') {
+        return vmInfo.vm.ip;
+      }
     }
 
     return null;

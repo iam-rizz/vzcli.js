@@ -1,4 +1,5 @@
 const axios = require('axios');
+const qs = require('node:querystring');
 
 class ApiClient {
   constructor(apiUrl, apiKey, apiPassword) {
@@ -8,42 +9,104 @@ class ApiClient {
     this.timeout = 30000;
   }
 
-  async makeRequest(action, params = {}) {
-    const requestData = {
+  buildUrl(action, params = {}) {
+    const baseParams = {
+      act: action,
       api: 'json',
       apikey: this.apiKey,
       apipass: this.apiPassword,
-      act: action,
       ...params
     };
 
-    try {
-      const response = await axios.post(this.apiUrl, requestData, {
-        timeout: this.timeout,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'vzcli/1.0.0/Rizz'
-        }
-      });
+    const query = Object.keys(baseParams)
+      .map(key => `${key}=${encodeURIComponent(baseParams[key])}`)
+      .join('&');
 
-      if (response.data && response.data.done) {
+    return `${this.apiUrl}?${query}`;
+  }
+
+  async makeRequest(action, method = 'GET', data = null, params = {}) {
+    try {
+      let response;
+      
+      if (method.toUpperCase() === 'POST') {
+        const url = this.buildUrl(action, params);
+        response = await axios.post(url, data, {
+          timeout: this.timeout,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'vzcli/1.0.1'
+          },
+          validateStatus: () => true // Accept all status codes
+        });
+      } else {
+        const url = this.buildUrl(action, params);
+        response = await axios.get(url, {
+          timeout: this.timeout,
+          headers: {
+            'User-Agent': 'vzcli/1.0.1'
+          },
+          validateStatus: () => true // Accept all status codes
+        });
+      }
+
+      // Check if we got valid JSON response
+      if (response.data) {
+        // Check for authentication errors
+        if (response.data.error && typeof response.data.error === 'string' && response.data.error.includes('authentication')) {
+          return {
+            success: false,
+            error: 'Authentication failed. Please verify API Key and Password.',
+            data: response.data
+          };
+        }
+
+        // Check for general success (check for done field and no error like Python implementation)
+        if (response.data.done && !response.data.error) {
+          return {
+            success: true,
+            data: response.data
+          };
+        } else if (response.data.vs || response.data.haproxydata) {
+          // For list operations, success if data exists
+          return {
+            success: true,
+            data: response.data
+          };
+        } else {
+          return {
+            success: false,
+            error: response.data.error || 'Unknown API error',
+            data: response.data
+          };
+        }
+      } else {
         return {
-          success: true,
-          data: response.data
+          success: false,
+          error: 'Invalid response from API',
+          data: null
+        };
+      }
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED') {
+        return {
+          success: false,
+          error: 'Connection refused. Please check API URL and network connectivity.',
+          data: null
+        };
+      } else if (error.code === 'ETIMEDOUT') {
+        return {
+          success: false,
+          error: 'Connection timeout. Please check network connectivity.',
+          data: null
         };
       } else {
         return {
           success: false,
-          error: response.data?.error || 'Unknown API error',
-          data: response.data
+          error: error.message,
+          data: null
         };
       }
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message,
-        data: null
-      };
     }
   }
 
@@ -63,53 +126,57 @@ class ApiClient {
   }
 
   async getVMInfo(vpsid) {
-    return await this.makeRequest('vpsmanage', { vpsid });
+    return await this.makeRequest('vpsmanage', 'GET', null, { vpsid });
   }
 
   async listForwardingRules(vpsid) {
-    return await this.makeRequest('domain_forwarding', { vpsid });
+    return await this.makeRequest('managevdf', 'GET', null, { svs: vpsid });
   }
 
   async addForwardingRule(vpsid, protocol, srcHostname, srcPort, destIp, destPort) {
-    return await this.makeRequest('domain_forwarding', {
-      vpsid,
+    const data = qs.stringify({
+      vdf_action: 'addvdf',
       protocol: protocol.toLowerCase(),
       src_hostname: srcHostname,
-      src_port: srcPort,
+      src_port: srcPort.toString(),
       dest_ip: destIp,
-      dest_port: destPort,
-      addforward: 1
+      dest_port: destPort.toString()
     });
+
+    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
   }
 
   async editForwardingRule(vpsid, vdfid, protocol, srcHostname, srcPort, destIp, destPort) {
-    return await this.makeRequest('domain_forwarding', {
-      vpsid,
-      vdfid,
+    const data = qs.stringify({
+      vdf_action: 'editvdf',
+      vdfid: vdfid,
       protocol: protocol.toLowerCase(),
       src_hostname: srcHostname,
-      src_port: srcPort,
+      src_port: srcPort.toString(),
       dest_ip: destIp,
-      dest_port: destPort,
-      editforward: 1
+      dest_port: destPort.toString()
     });
+
+    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
   }
 
   async deleteForwardingRule(vpsid, vdfid) {
-    return await this.makeRequest('domain_forwarding', {
-      vpsid,
-      vdfid,
-      deleteforward: 1
+    const data = qs.stringify({
+      vdf_action: 'delvdf',
+      ids: vdfid.toString()
     });
+
+    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
   }
 
   async deleteMultipleForwardingRules(vpsid, vdfids) {
     const vdfidString = Array.isArray(vdfids) ? vdfids.join(',') : vdfids;
-    return await this.makeRequest('domain_forwarding', {
-      vpsid,
-      vdfid: vdfidString,
-      deleteforward: 1
+    const data = qs.stringify({
+      vdf_action: 'delvdf',
+      ids: vdfidString
     });
+
+    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
   }
 }
 

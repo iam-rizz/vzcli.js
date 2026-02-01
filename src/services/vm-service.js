@@ -126,17 +126,30 @@ class VmService {
       return [];
     }
 
-    return Object.values(data.vs).map(vm => ({
-      vpsid: vm.vpsid,
-      hostname: vm.hostname || `vm-${vm.vpsid}`,
-      status: vm.status || 'unknown',
-      ip: vm.ip || 'N/A',
-      os: vm.os || 'Unknown',
-      ram: vm.ram || 0,
-      disk: vm.disk || 0,
-      cpu: vm.cpu || 0,
-      uptime: vm.uptime || 0
-    }));
+    return Object.values(data.vs).map(vm => {
+      // Extract IP from ips object like Python implementation
+      let ipv4 = null;
+      if (vm.ips && typeof vm.ips === 'object') {
+        for (const ip of Object.values(vm.ips)) {
+          if (typeof ip === 'string' && ip.includes('.') && !ip.includes(':')) {
+            ipv4 = ip;
+            break;
+          }
+        }
+      }
+
+      return {
+        vpsid: vm.vpsid,
+        hostname: vm.hostname || `vm-${vm.vpsid}`,
+        status: vm.status || 'unknown',
+        ip: ipv4 || vm.ip || 'N/A',
+        os: vm.os || 'Unknown',
+        ram: vm.ram || 0,
+        disk: vm.disk || 0,
+        cpu: vm.cpu || 0,
+        uptime: vm.uptime || 0
+      };
+    });
   }
 
   displayVMList(vms, hostName) {

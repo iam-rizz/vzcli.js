@@ -10,7 +10,6 @@ exports.builder = (yargs) => {
       choices: ['export', 'import', 'template']
     })
     .option('vpsid', {
-      alias: 'v',
       describe: 'VM ID',
       type: 'string'
     })
