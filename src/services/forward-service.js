@@ -371,7 +371,6 @@ class ForwardService {
       return [];
     }
 
-    // Handle both dict and list responses from API
     let ruleItems;
     if (Array.isArray(data.haproxydata)) {
       ruleItems = data.haproxydata;
@@ -408,7 +407,6 @@ class ForwardService {
   }
 
   extractVMIP(vmInfo) {
-    // First try to get IP from ips object (like Python implementation)
     if (vmInfo.ips && typeof vmInfo.ips === 'object') {
       for (const ip of Object.values(vmInfo.ips)) {
         if (typeof ip === 'string' && ip.includes('.') && !ip.includes(':')) {
@@ -417,12 +415,10 @@ class ForwardService {
       }
     }
 
-    // Fallback to direct ip field
     if (vmInfo.ip && vmInfo.ip !== 'N/A') {
       return vmInfo.ip;
     }
 
-    // Try nested vm object
     if (vmInfo.vm) {
       if (vmInfo.vm.ips && typeof vmInfo.vm.ips === 'object') {
         for (const ip of Object.values(vmInfo.vm.ips)) {

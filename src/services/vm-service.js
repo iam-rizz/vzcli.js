@@ -127,7 +127,6 @@ class VmService {
     }
 
     return Object.values(data.vs).map(vm => {
-      // Extract IP from ips object like Python implementation
       let ipv4 = null;
       if (vm.ips && typeof vm.ips === 'object') {
         for (const ip of Object.values(vm.ips)) {
@@ -165,9 +164,7 @@ class VmService {
       Hostname: this.output.formatHostname(vm.hostname),
       Status: this.output.formatVMStatus(vm.status),
       IP: this.output.formatIP(vm.ip),
-      OS: vm.os,
-      RAM: this.output.formatSize(vm.ram, 'MB'),
-      Disk: this.output.formatSize(vm.disk, 'GB')
+      OS: vm.os
     }));
 
     this.output.table(tableData);

@@ -1,6 +1,5 @@
 const chalk = require('chalk');
 
-// Force enable colors
 chalk.level = 3;
 
 let logSymbols;
@@ -20,7 +19,6 @@ try {
 
 class Output {
   constructor(options = {}) {
-    // Default to colors enabled unless explicitly disabled
     this.noColor = options.color === false;
     this.verboseMode = options.verbose || false;
     this.debugMode = options.debug || false;
@@ -71,42 +69,35 @@ class Output {
       return;
     }
 
-    // Create a simple table formatter that handles colors properly
     this.printTable(data, headers);
   }
 
   printTable(data, headers = null) {
     if (!Array.isArray(data) || data.length === 0) return;
 
-    // Get all unique keys from data
     const allKeys = headers || [...new Set(data.flatMap(Object.keys))];
     
-    // Calculate column widths based on clean text (without ANSI codes)
     const columnWidths = {};
     allKeys.forEach(key => {
       const headerLength = key.length;
       const maxDataLength = Math.max(...data.map(row => {
         const value = row[key];
-        // Strip ANSI codes for length calculation only
         const cleanValue = typeof value === 'string' ? value.replace(/\x1B\[[0-9;]*m/g, '') : String(value || '');
         return cleanValue.length;
       }));
       columnWidths[key] = Math.max(headerLength, maxDataLength, 3);
     });
 
-    // Print header
     const headerRow = allKeys.map(key => key.padEnd(columnWidths[key])).join(' │ ');
     console.log(`┌─${allKeys.map(key => '─'.repeat(columnWidths[key])).join('─┬─')}─┐`);
     console.log(`│ ${headerRow} │`);
     console.log(`├─${allKeys.map(key => '─'.repeat(columnWidths[key])).join('─┼─')}─┤`);
 
-    // Print data rows
     data.forEach(row => {
       const dataRow = allKeys.map(key => {
         const value = row[key] || '';
         const cleanValue = typeof value === 'string' ? value.replace(/\x1B\[[0-9;]*m/g, '') : String(value);
         const padding = columnWidths[key] - cleanValue.length;
-        // Keep original value with colors, just add padding based on clean length
         return value + ' '.repeat(Math.max(0, padding));
       }).join(' │ ');
       console.log(`│ ${dataRow} │`);
@@ -124,8 +115,8 @@ class Output {
       return status === 'up' ? '● up' : '● down';
     }
     return status === 'up' ? 
-      `\x1b[1;32m● up\x1b[0m` :  // Bold green
-      `\x1b[1;31m● down\x1b[0m`; // Bold red
+      `\x1b[1;32m● up\x1b[0m` :
+      `\x1b[1;31m● down\x1b[0m`;
   }
 
   formatResponseTime(ms) {
@@ -145,13 +136,13 @@ class Output {
 
     switch (protocol.toUpperCase()) {
       case 'HTTP':
-        return `\x1b[1;34m${protocol}\x1b[0m`; // Bold blue
+        return `\x1b[1;34m${protocol}\x1b[0m`;
       case 'HTTPS':
-        return `\x1b[1;32m${protocol}\x1b[0m`; // Bold green
+        return `\x1b[1;32m${protocol}\x1b[0m`;
       case 'TCP':
-        return `\x1b[1;36m${protocol}\x1b[0m`; // Bold cyan
+        return `\x1b[1;36m${protocol}\x1b[0m`;
       default:
-        return `\x1b[1;35m${protocol}\x1b[0m`; // Bold magenta
+        return `\x1b[1;35m${protocol}\x1b[0m`;
     }
   }
 
@@ -159,42 +150,42 @@ class Output {
     if (this.noColor) {
       return `${size} ${unit}`;
     }
-    return `\x1b[1;33m${size} ${unit}\x1b[0m`; // Bold yellow
+    return `\x1b[1;33m${size} ${unit}\x1b[0m`;
   }
 
   formatIP(ip) {
     if (this.noColor || !ip || ip === 'N/A') {
       return ip || 'N/A';
     }
-    return `\x1b[1;36m${ip}\x1b[0m`; // Bold cyan
+    return `\x1b[1;36m${ip}\x1b[0m`;
   }
 
   formatHostname(hostname) {
     if (this.noColor) {
       return hostname;
     }
-    return `\x1b[1;37m${hostname}\x1b[0m`; // Bold white
+    return `\x1b[1;37m${hostname}\x1b[0m`;
   }
 
   formatID(id) {
     if (this.noColor) {
       return id;
     }
-    return `\x1b[1;35m${id}\x1b[0m`; // Bold magenta
+    return `\x1b[1;35m${id}\x1b[0m`;
   }
 
   formatPort(port) {
     if (this.noColor) {
       return port;
     }
-    return `\x1b[1;33m${port}\x1b[0m`; // Bold yellow
+    return `\x1b[1;33m${port}\x1b[0m`;
   }
 
   formatDomain(domain) {
     if (this.noColor) {
       return domain;
     }
-    return `\x1b[1;34m${domain}\x1b[0m`; // Bold blue
+    return `\x1b[1;34m${domain}\x1b[0m`;
   }
 
   printHeader(title) {

@@ -37,7 +37,7 @@ class ApiClient {
             'Content-Type': 'application/x-www-form-urlencoded',
             'User-Agent': 'vzcli/1.0.1'
           },
-          validateStatus: () => true // Accept all status codes
+          validateStatus: () => true
         });
       } else {
         const url = this.buildUrl(action, params);
@@ -46,13 +46,11 @@ class ApiClient {
           headers: {
             'User-Agent': 'vzcli/1.0.1'
           },
-          validateStatus: () => true // Accept all status codes
+          validateStatus: () => true
         });
       }
 
-      // Check if we got valid JSON response
       if (response.data) {
-        // Check for authentication errors
         if (response.data.error && typeof response.data.error === 'string' && response.data.error.includes('authentication')) {
           return {
             success: false,
@@ -61,14 +59,12 @@ class ApiClient {
           };
         }
 
-        // Check for general success (check for done field and no error like Python implementation)
         if (response.data.done && !response.data.error) {
           return {
             success: true,
             data: response.data
           };
         } else if (response.data.vs || response.data.haproxydata) {
-          // For list operations, success if data exists
           return {
             success: true,
             data: response.data
