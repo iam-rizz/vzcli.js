@@ -1,5 +1,8 @@
 const chalk = require('chalk');
 
+// Force enable colors
+chalk.level = 3;
+
 let logSymbols;
 try {
   logSymbols = require('log-symbols');
@@ -120,7 +123,9 @@ class Output {
     if (this.noColor) {
       return status === 'up' ? '● up' : '● down';
     }
-    return status === 'up' ? chalk.green('● up') : chalk.red('● down');
+    return status === 'up' ? 
+      `\x1b[1;32m● up\x1b[0m` :  // Bold green
+      `\x1b[1;31m● down\x1b[0m`; // Bold red
   }
 
   formatResponseTime(ms) {
@@ -128,9 +133,9 @@ class Output {
       return `${ms}ms`;
     }
     
-    if (ms < 100) return chalk.green(`${ms}ms`);
-    if (ms < 500) return chalk.yellow(`${ms}ms`);
-    return chalk.red(`${ms}ms`);
+    if (ms < 100) return chalk.bold.green(`${ms}ms`);
+    if (ms < 500) return chalk.bold.yellow(`${ms}ms`);
+    return chalk.bold.red(`${ms}ms`);
   }
 
   formatProtocol(protocol) {
@@ -140,14 +145,56 @@ class Output {
 
     switch (protocol.toUpperCase()) {
       case 'HTTP':
-        return chalk.blue(protocol);
+        return `\x1b[1;34m${protocol}\x1b[0m`; // Bold blue
       case 'HTTPS':
-        return chalk.green(protocol);
+        return `\x1b[1;32m${protocol}\x1b[0m`; // Bold green
       case 'TCP':
-        return chalk.cyan(protocol);
+        return `\x1b[1;36m${protocol}\x1b[0m`; // Bold cyan
       default:
-        return protocol;
+        return `\x1b[1;35m${protocol}\x1b[0m`; // Bold magenta
     }
+  }
+
+  formatSize(size, unit = 'MB') {
+    if (this.noColor) {
+      return `${size} ${unit}`;
+    }
+    return `\x1b[1;33m${size} ${unit}\x1b[0m`; // Bold yellow
+  }
+
+  formatIP(ip) {
+    if (this.noColor || !ip || ip === 'N/A') {
+      return ip || 'N/A';
+    }
+    return `\x1b[1;36m${ip}\x1b[0m`; // Bold cyan
+  }
+
+  formatHostname(hostname) {
+    if (this.noColor) {
+      return hostname;
+    }
+    return `\x1b[1;37m${hostname}\x1b[0m`; // Bold white
+  }
+
+  formatID(id) {
+    if (this.noColor) {
+      return id;
+    }
+    return `\x1b[1;35m${id}\x1b[0m`; // Bold magenta
+  }
+
+  formatPort(port) {
+    if (this.noColor) {
+      return port;
+    }
+    return `\x1b[1;33m${port}\x1b[0m`; // Bold yellow
+  }
+
+  formatDomain(domain) {
+    if (this.noColor) {
+      return domain;
+    }
+    return `\x1b[1;34m${domain}\x1b[0m`; // Bold blue
   }
 
   printHeader(title) {

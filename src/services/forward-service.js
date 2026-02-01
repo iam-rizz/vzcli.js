@@ -398,10 +398,10 @@ class ForwardService {
     this.output.printHeader(`Forwarding Rules for VM ${vpsid} (${rules.length})`);
 
     const tableData = rules.map(rule => ({
-      ID: rule.vdfid,
+      ID: this.output.formatID(rule.vdfid),
       Protocol: this.output.formatProtocol(rule.protocol),
-      'Source': `${rule.src_hostname}:${rule.src_port}`,
-      'Destination': `${rule.dest_ip}:${rule.dest_port}`
+      'Source': `${this.output.formatDomain(rule.src_hostname)}:${this.output.formatPort(rule.src_port)}`,
+      'Destination': `${this.output.formatIP(rule.dest_ip)}:${this.output.formatPort(rule.dest_port)}`
     }));
 
     this.output.table(tableData);

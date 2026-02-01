@@ -194,9 +194,11 @@ async function handleList(configManager, output) {
   output.printHeader('Configured Hosts');
 
   const tableData = Object.values(hosts).map(host => ({
-    Name: host.name + (host.name === defaultHost ? ' (default)' : ''),
-    URL: host.api_url,
-    Storage: host.storage_method === 'keyring' ? 'OS Keyring' : 'Encrypted File'
+    Name: output.formatHostname(host.name + (host.name === defaultHost ? ' (default)' : '')),
+    URL: output.formatDomain(host.api_url),
+    Storage: host.storage_method === 'keyring' ? 
+      output.formatSize('OS Keyring', '') : 
+      output.formatSize('Encrypted File', '')
   }));
 
   output.table(tableData);

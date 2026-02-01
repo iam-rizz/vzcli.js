@@ -161,13 +161,13 @@ class VmService {
     this.output.printHeader(`VMs from ${hostName} (${vms.length})`);
 
     const tableData = vms.map(vm => ({
-      ID: vm.vpsid,
-      Hostname: vm.hostname,
+      ID: this.output.formatID(vm.vpsid),
+      Hostname: this.output.formatHostname(vm.hostname),
       Status: this.output.formatVMStatus(vm.status),
-      IP: vm.ip,
+      IP: this.output.formatIP(vm.ip),
       OS: vm.os,
-      RAM: `${vm.ram} MB`,
-      Disk: `${vm.disk} GB`
+      RAM: this.output.formatSize(vm.ram, 'MB'),
+      Disk: this.output.formatSize(vm.disk, 'GB')
     }));
 
     this.output.table(tableData);
