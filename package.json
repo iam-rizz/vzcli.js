@@ -1,0 +1,60 @@
+{
+  "name": "vzcli",
+  "version": "1.0.0",
+  "description": "CLI tool for managing Virtualizor VPS domain/port forwarding with multi-host support",
+  "main": "src/index.js",
+  "bin": {
+    "vzcli": "bin/vzcli.js"
+  },
+  "scripts": {
+    "start": "node bin/vzcli.js",
+    "test": "jest",
+    "dev": "nodemon bin/vzcli.js",
+    "lint": "eslint src/",
+    "format": "prettier --write src/"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "yargs": "^17.7.2",
+    "prompts": "^2.4.2",
+    "cli-spinners": "^2.9.2",
+    "cli-progress": "^3.12.0",
+    "log-symbols": "^5.1.0",
+    "update-notifier": "^6.0.2",
+    "chalk": "^4.1.2",
+    "axios": "^1.6.0",
+    "keytar": "^7.9.0",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1"
+  },
+  "keywords": [
+    "virtualizor",
+    "vps",
+    "cli",
+    "port-forwarding",
+    "domain-forwarding",
+    "nat-vps",
+    "server-management"
+  ],
+  "author": {
+    "name": "Rizz",
+    "email": "rizkyadhypratama@gmail.com",
+    "url": "https://github.com/iam-rizz"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iam-rizz/vzcli.js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iam-rizz/vzcli.js/issues"
+  },
+  "homepage": "https://github.com/iam-rizz/vzcli.js#readme"
+}
