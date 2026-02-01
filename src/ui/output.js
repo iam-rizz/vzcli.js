@@ -18,8 +18,8 @@ try {
 class Output {
   constructor(options = {}) {
     this.noColor = options.noColor || false;
-    this.verbose = options.verbose || false;
-    this.debug = options.debug || false;
+    this.verboseMode = options.verbose || false;
+    this.debugMode = options.debug || false;
   }
 
   success(message) {
@@ -47,13 +47,13 @@ class Output {
   }
 
   verbose(message) {
-    if (this.verbose) {
+    if (this.verboseMode) {
       console.log(`${this.noColor ? '[VERBOSE]' : chalk.gray('[VERBOSE]')} ${message}`);
     }
   }
 
   debug(message, error = null) {
-    if (this.debug) {
+    if (this.debugMode) {
       console.log(`${this.noColor ? '[DEBUG]' : chalk.magenta('[DEBUG]')} ${message}`);
       if (error && error.stack) {
         console.log(error.stack);
