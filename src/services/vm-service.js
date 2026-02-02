@@ -300,6 +300,193 @@ class VmService {
     }
   }
 
+  async listVMsUsage(options = {}) {
+    const { host, status, allHosts, json } = options;
+
+    if (allHosts) {
+      return await this.listVMsUsageFromAllHosts(status, json);
+    }
+
+    try {
+      const apiClient = await this.getApiClient(host);
+      const result = await this.progress.withSpinner(
+        apiClient.listVMs(),
+        'Fetching VMs...',
+        null,
+        'Failed to fetch VMs'
+      );
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      let vms = this.parseVMList(result.data);
+
+      if (status) {
+        vms = vms.filter(vm => vm.status === status);
+      }
+
+      if (vms.length === 0) {
+        this.output.info('No VMs found');
+        return [];
+      }
+
+      const vmUsageData = [];
+      const hostName = host || await this.configManager.getDefaultHost();
+
+      for (const vm of vms) {
+        try {
+          const statsResult = await this.progress.withSpinner(
+            apiClient.getVMStats(vm.vpsid),
+            `Fetching usage for ${vm.hostname}...`,
+            null,
+            `Failed to fetch usage for ${vm.hostname}`
+          );
+
+          const stats = statsResult.success ? statsResult.data : {
+            ram_used: 0, ram_total: 0, disk_used: 0, disk_total: 0,
+            bandwidth_used: 0, bandwidth_total: 0, nw_rules: 0
+          };
+
+          vmUsageData.push({ vm, stats, host: hostName });
+        } catch (error) {
+          vmUsageData.push({
+            vm,
+            stats: {
+              ram_used: 0, ram_total: 0, disk_used: 0, disk_total: 0,
+              bandwidth_used: 0, bandwidth_total: 0, nw_rules: 0
+            },
+            host: hostName,
+            error: error.message
+          });
+        }
+      }
+
+      if (json) {
+        this.output.json(vmUsageData);
+      } else {
+        this.displayVMsUsageList(vmUsageData, hostName);
+      }
+
+      return vmUsageData;
+    } catch (error) {
+      this.output.error(error.message);
+      if (this.output.debug) {
+        this.output.debug('VM usage list error:', error);
+      }
+      return [];
+    }
+  }
+
+  async listVMsUsageFromAllHosts(status = null, json = false) {
+    const hosts = await this.configManager.listHosts();
+    
+    if (hosts.length === 0) {
+      this.output.warning('No hosts configured');
+      return {};
+    }
+
+    const results = {};
+    
+    for (const hostName of hosts) {
+      try {
+        const vmUsageData = await this.listVMsUsage({
+          host: hostName,
+          status,
+          json: false
+        });
+
+        results[hostName] = {
+          success: true,
+          vms: vmUsageData,
+          count: vmUsageData.length
+        };
+      } catch (error) {
+        results[hostName] = {
+          success: false,
+          error: error.message,
+          vms: [],
+          count: 0
+        };
+      }
+    }
+
+    if (json) {
+      this.output.json(results);
+    } else {
+      this.displayMultiHostVMsUsageList(results, status);
+    }
+
+    return results;
+  }
+
+  displayVMsUsageList(vmUsageData, hostName) {
+    if (vmUsageData.length === 0) {
+      this.output.info('No VMs found');
+      return;
+    }
+
+    this.output.printHeader(`VM Usage Statistics from ${hostName} (${vmUsageData.length})`);
+
+    const tableData = vmUsageData.map(({ vm, stats, error }) => {
+      const ramUsedGB = stats.ram_used / 1024;
+      const ramTotalGB = stats.ram_total / 1024;
+      const ramPercent = this.output.formatPercentage(ramUsedGB, ramTotalGB);
+      const ramBar = this.output.progressBar(ramUsedGB, ramTotalGB, 8);
+
+      const diskPercent = this.output.formatPercentage(stats.disk_used, stats.disk_total);
+      const diskBar = this.output.progressBar(stats.disk_used, stats.disk_total, 8);
+
+      const bwUsedTB = stats.bandwidth_used / 1024;
+      const bwTotalTB = stats.bandwidth_total / 1024;
+      const bwPercent = this.output.formatPercentage(bwUsedTB, bwTotalTB);
+      const bwBar = this.output.progressBar(bwUsedTB, bwTotalTB, 8);
+
+      return {
+        ID: this.output.formatID(vm.vpsid),
+        Hostname: this.output.formatHostname(vm.hostname),
+        Status: this.output.formatVMStatus(vm.status),
+        RAM: error ? 'Error' : `${ramBar} ${ramPercent}`,
+        Disk: error ? 'Error' : `${diskBar} ${diskPercent}`,
+        BW: error ? 'Error' : `${bwBar} ${bwPercent}`,
+        Rules: error ? 'N/A' : this.output.formatID(stats.nw_rules)
+      };
+    });
+
+    this.output.table(tableData);
+  }
+
+  displayMultiHostVMsUsageList(results, status) {
+    const totalHosts = Object.keys(results).length;
+    let totalVMs = 0;
+    let successfulHosts = 0;
+
+    Object.values(results).forEach(result => {
+      if (result.success) {
+        successfulHosts++;
+        totalVMs += result.count;
+      }
+    });
+
+    const statusFilter = status ? ` (${status} only)` : '';
+    this.output.printHeader(`VM Usage Statistics from all hosts${statusFilter}`);
+    this.output.info(`Connected to ${successfulHosts}/${totalHosts} hosts, found ${totalVMs} VMs`);
+    this.output.printSeparator();
+
+    for (const [hostName, result] of Object.entries(results)) {
+      if (result.success) {
+        if (result.vms.length > 0) {
+          this.displayVMsUsageList(result.vms, hostName);
+        } else {
+          this.output.info(`${hostName}: No VMs found`);
+        }
+      } else {
+        this.output.error(`${hostName}: ${result.error}`);
+      }
+      this.output.printSeparator();
+    }
+  }
+
   displayVMUsage(data) {
     const { vm, stats, host } = data;
     

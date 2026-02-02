@@ -10,7 +10,7 @@ exports.builder = (yargs) => {
       choices: ['list', 'usage']
     })
     .option('vpsid', {
-      describe: 'VPS ID (required for usage action)',
+      describe: 'VPS ID (optional, shows usage for specific VM)',
       type: 'string'
     })
     .option('status', {
@@ -35,7 +35,9 @@ exports.builder = (yargs) => {
     .example('vzcli vm list --status up')
     .example('vzcli vm list --all-hosts')
     .example('vzcli vm list --all-hosts --status up --json')
+    .example('vzcli vm usage')
     .example('vzcli vm usage --vpsid 105')
+    .example('vzcli vm usage --json')
     .example('vzcli vm usage --vpsid 105 --json');
 };
 
@@ -51,15 +53,19 @@ exports.handler = async (argv) => {
         json: argv.json
       });
     } else if (argv.action === 'usage') {
-      if (!argv.vpsid) {
-        vmService.output.error('VPS ID is required for usage action. Use --vpsid option.');
-        process.exit(1);
+      if (argv.vpsid) {
+        await vmService.getVMUsage(argv.vpsid, {
+          host: argv.host,
+          json: argv.json
+        });
+      } else {
+        await vmService.listVMsUsage({
+          host: argv.host,
+          status: argv.status,
+          allHosts: argv.allHosts,
+          json: argv.json
+        });
       }
-      
-      await vmService.getVMUsage(argv.vpsid, {
-        host: argv.host,
-        json: argv.json
-      });
     } else {
       vmService.output.error('Unknown action');
       process.exit(1);
