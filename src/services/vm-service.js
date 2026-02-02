@@ -152,7 +152,7 @@ class VmService {
         disk: diskGB,
         bandwidth: bandwidthGB,
         cpu: vm.cpu || 0,
-        uptime: vm.uptime || 0
+        // uptime: vm.uptime || 0
       };
     });
   }
@@ -171,9 +171,9 @@ class VmService {
       Status: this.output.formatVMStatus(vm.status),
       IP: this.output.formatIP(vm.ip),
       OS: vm.os,
-      RAM: this.output.formatSize(vm.ram, 'MB'),
+      RAM: this.output.formatSize((parseInt(vm.ram) / 1024).toFixed(1), 'GB'),
       Disk: this.output.formatSize(vm.disk, 'GB'),
-      BW: this.output.formatSize(vm.bandwidth, 'GB')
+      BW: this.output.formatSize((parseInt(vm.bandwidth) / 1024).toFixed(1), 'TB')
     }));
 
     this.output.table(tableData);
