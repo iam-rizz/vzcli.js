@@ -199,6 +199,77 @@ class Output {
   printSeparator() {
     console.log('');
   }
+
+  progressBar(used, total, length = 10) {
+    try {
+      const usedNum = parseFloat(used);
+      const totalNum = parseFloat(total);
+      
+      if (totalNum <= 0) {
+        return '░'.repeat(length);
+      }
+      
+      const percentage = Math.min(usedNum / totalNum, 1);
+      const filled = Math.round(percentage * length);
+      const empty = length - filled;
+      
+      if (this.noColor) {
+        return '█'.repeat(filled) + '░'.repeat(empty);
+      }
+      
+      let color;
+      if (percentage < 0.5) {
+        color = '\x1b[1;32m';
+      } else if (percentage < 0.8) {
+        color = '\x1b[1;33m';
+      } else {
+        color = '\x1b[1;31m';
+      }
+      
+      return `${color}${'█'.repeat(filled)}\x1b[0m${'░'.repeat(empty)}`;
+    } catch (error) {
+      return '░'.repeat(length);
+    }
+  }
+
+  formatPercentage(used, total) {
+    try {
+      const usedNum = parseFloat(used);
+      const totalNum = parseFloat(total);
+      
+      if (totalNum <= 0) {
+        return this.noColor ? '0%' : '\x1b[1;37m0%\x1b[0m';
+      }
+      
+      const percentage = Math.min((usedNum / totalNum) * 100, 100);
+      const percentStr = `${percentage.toFixed(1)}%`;
+      
+      if (this.noColor) {
+        return percentStr;
+      }
+      
+      if (percentage < 50) {
+        return `\x1b[1;32m${percentStr}\x1b[0m`;
+      } else if (percentage < 80) {
+        return `\x1b[1;33m${percentStr}\x1b[0m`;
+      } else {
+        return `\x1b[1;31m${percentStr}\x1b[0m`;
+      }
+    } catch (error) {
+      return this.noColor ? '0%' : '\x1b[1;37m0%\x1b[0m';
+    }
+  }
+
+  formatUsage(used, total, unit = 'GB') {
+    const usedStr = parseFloat(used).toFixed(1);
+    const totalStr = parseFloat(total).toFixed(1);
+    
+    if (this.noColor) {
+      return `${usedStr}/${totalStr} ${unit}`;
+    }
+    
+    return `\x1b[1;36m${usedStr}\x1b[0m/\x1b[1;37m${totalStr}\x1b[0m \x1b[1;33m${unit}\x1b[0m`;
+  }
 }
 
 module.exports = Output;

@@ -7,7 +7,11 @@ exports.builder = (yargs) => {
   return yargs
     .positional('action', {
       describe: 'Action to perform',
-      choices: ['list']
+      choices: ['list', 'usage']
+    })
+    .option('vpsid', {
+      describe: 'VPS ID (required for usage action)',
+      type: 'string'
     })
     .option('status', {
       alias: 's',
@@ -30,25 +34,35 @@ exports.builder = (yargs) => {
     .example('vzcli vm list')
     .example('vzcli vm list --status up')
     .example('vzcli vm list --all-hosts')
-    .example('vzcli vm list --all-hosts --status up --json');
+    .example('vzcli vm list --all-hosts --status up --json')
+    .example('vzcli vm usage --vpsid 105')
+    .example('vzcli vm usage --vpsid 105 --json');
 };
 
 exports.handler = async (argv) => {
   const vmService = new VmService(argv);
 
   try {
-    switch (argv.action) {
-      case 'list':
-        await vmService.listVMs({
-          host: argv.host,
-          status: argv.status,
-          allHosts: argv.allHosts,
-          json: argv.json
-        });
-        break;
-      default:
-        vmService.output.error('Unknown action');
+    if (argv.action === 'list') {
+      await vmService.listVMs({
+        host: argv.host,
+        status: argv.status,
+        allHosts: argv.allHosts,
+        json: argv.json
+      });
+    } else if (argv.action === 'usage') {
+      if (!argv.vpsid) {
+        vmService.output.error('VPS ID is required for usage action. Use --vpsid option.');
         process.exit(1);
+      }
+      
+      await vmService.getVMUsage(argv.vpsid, {
+        host: argv.host,
+        json: argv.json
+      });
+    } else {
+      vmService.output.error('Unknown action');
+      process.exit(1);
     }
   } catch (error) {
     vmService.output.error(error.message);

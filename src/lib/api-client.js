@@ -64,7 +64,7 @@ class ApiClient {
             success: true,
             data: response.data
           };
-        } else if (response.data.vs || response.data.haproxydata) {
+        } else if (response.data.vs || response.data.haproxydata || response.data.ram || response.data.disk || response.data.bandwidth) {
           return {
             success: true,
             data: response.data
@@ -173,6 +173,77 @@ class ApiClient {
     });
 
     return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
+  }
+
+  async getVMRamUsage(vpsid) {
+    return await this.makeRequest('ram', 'GET', null, { svs: vpsid });
+  }
+
+  async getVMDiskUsage(vpsid) {
+    return await this.makeRequest('disk', 'GET', null, { svs: vpsid });
+  }
+
+  async getVMBandwidthUsage(vpsid) {
+    return await this.makeRequest('bandwidth', 'GET', null, { svs: vpsid });
+  }
+
+  async getVMStats(vpsid) {
+    const stats = {
+      ram_used: 0,
+      ram_total: 0,
+      disk_used: 0,
+      disk_total: 0,
+      bandwidth_used: 0,
+      bandwidth_total: 0,
+      nw_rules: 0
+    };
+
+    try {
+      const ramResult = await this.getVMRamUsage(vpsid);
+      if (ramResult.success && ramResult.data.ram) {
+        const info = ramResult.data.ram;
+        stats.ram_used = parseFloat(info.used || 0);
+        stats.ram_total = parseFloat(info.limit || 0);
+      }
+    } catch (error) {
+      // Ignore RAM fetch errors
+    }
+
+    try {
+      const diskResult = await this.getVMDiskUsage(vpsid);
+      if (diskResult.success && diskResult.data.disk) {
+        const info = diskResult.data.disk;
+        stats.disk_used = parseFloat(info.used_gb || 0);
+        stats.disk_total = parseFloat(info.limit_gb || 0);
+      }
+    } catch (error) {
+      // Ignore disk fetch errors
+    }
+
+    try {
+      const bwResult = await this.getVMBandwidthUsage(vpsid);
+      if (bwResult.success && bwResult.data.bandwidth) {
+        const info = bwResult.data.bandwidth;
+        stats.bandwidth_used = parseFloat(info.used_gb || 0);
+        stats.bandwidth_total = parseFloat(info.limit_gb || 0);
+      }
+    } catch (error) {
+      // Ignore bandwidth fetch errors
+    }
+
+    try {
+      const nwResult = await this.listForwardingRules(vpsid);
+      if (nwResult.success && nwResult.data.haproxydata) {
+        stats.nw_rules = Object.keys(nwResult.data.haproxydata).length;
+      }
+    } catch (error) {
+      // Ignore network rules fetch errors
+    }
+
+    return {
+      success: true,
+      data: stats
+    };
   }
 }
 

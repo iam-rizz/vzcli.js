@@ -241,6 +241,114 @@ class VmService {
       return null;
     }
   }
+
+  async getVMUsage(vpsid, options = {}) {
+    const { host, json } = options;
+
+    try {
+      const apiClient = await this.getApiClient(host);
+      
+      const vmResult = await this.progress.withSpinner(
+        apiClient.listVMs(),
+        'Fetching VM info...',
+        null,
+        'Failed to fetch VM info'
+      );
+
+      if (!vmResult.success) {
+        throw new Error(vmResult.error);
+      }
+
+      const vms = this.parseVMList(vmResult.data);
+      const vm = vms.find(v => v.vpsid === vpsid);
+
+      if (!vm) {
+        throw new Error(`VM with ID ${vpsid} not found`);
+      }
+
+      const statsResult = await this.progress.withSpinner(
+        apiClient.getVMStats(vpsid),
+        'Fetching usage statistics...',
+        null,
+        'Failed to fetch usage statistics'
+      );
+
+      if (!statsResult.success) {
+        throw new Error(statsResult.error);
+      }
+
+      const stats = statsResult.data;
+      const usageData = {
+        vm,
+        stats,
+        host: host || await this.configManager.getDefaultHost()
+      };
+
+      if (json) {
+        this.output.json(usageData);
+      } else {
+        this.displayVMUsage(usageData);
+      }
+
+      return usageData;
+    } catch (error) {
+      this.output.error(error.message);
+      if (this.output.debug) {
+        this.output.debug('VM usage error:', error);
+      }
+      return null;
+    }
+  }
+
+  displayVMUsage(data) {
+    const { vm, stats, host } = data;
+    
+    this.output.printHeader(`VM Usage Statistics - ${vm.hostname} (${vm.vpsid})`);
+    
+    console.log(`${this.output.noColor ? 'Host:' : '\x1b[1;37mHost:\x1b[0m'} ${host}`);
+    console.log(`${this.output.noColor ? 'Status:' : '\x1b[1;37mStatus:\x1b[0m'} ${this.output.formatVMStatus(vm.status)}`);
+    console.log(`${this.output.noColor ? 'IP Address:' : '\x1b[1;37mIP Address:\x1b[0m'} ${this.output.formatIP(vm.ip)}`);
+    console.log(`${this.output.noColor ? 'OS:' : '\x1b[1;37mOS:\x1b[0m'} ${vm.os}`);
+    console.log(`${this.output.noColor ? 'vCPU:' : '\x1b[1;37mvCPU:\x1b[0m'} ${vm.cpu} cores`);
+    
+    this.output.printSeparator();
+    
+    const ramUsedGB = stats.ram_used / 1024;
+    const ramTotalGB = stats.ram_total / 1024;
+    const ramBar = this.output.progressBar(ramUsedGB, ramTotalGB, 20);
+    const ramPercent = this.output.formatPercentage(ramUsedGB, ramTotalGB);
+    const ramUsage = this.output.formatUsage(ramUsedGB, ramTotalGB, 'GB');
+    
+    console.log(`${this.output.noColor ? 'RAM Usage:' : '\x1b[1;37mRAM Usage:\x1b[0m'}`);
+    console.log(`  ${ramBar} ${ramPercent}`);
+    console.log(`  ${ramUsage}`);
+    
+    this.output.printSeparator();
+    
+    const diskBar = this.output.progressBar(stats.disk_used, stats.disk_total, 20);
+    const diskPercent = this.output.formatPercentage(stats.disk_used, stats.disk_total);
+    const diskUsage = this.output.formatUsage(stats.disk_used, stats.disk_total, 'GB');
+    
+    console.log(`${this.output.noColor ? 'Disk Usage:' : '\x1b[1;37mDisk Usage:\x1b[0m'}`);
+    console.log(`  ${diskBar} ${diskPercent}`);
+    console.log(`  ${diskUsage}`);
+    
+    this.output.printSeparator();
+    
+    const bwUsedTB = stats.bandwidth_used / 1024;
+    const bwTotalTB = stats.bandwidth_total / 1024;
+    const bwBar = this.output.progressBar(bwUsedTB, bwTotalTB, 20);
+    const bwPercent = this.output.formatPercentage(bwUsedTB, bwTotalTB);
+    const bwUsage = this.output.formatUsage(bwUsedTB, bwTotalTB, 'TB');
+    
+    console.log(`${this.output.noColor ? 'Bandwidth Usage:' : '\x1b[1;37mBandwidth Usage:\x1b[0m'}`);
+    console.log(`  ${bwBar} ${bwPercent}`);
+    console.log(`  ${bwUsage}`);
+    
+    this.output.printSeparator();
+    
+    console.log(`${this.output.noColor ? 'Port Forwarding Rules:' : '\x1b[1;37mPort Forwarding Rules:\x1b[0m'} ${this.output.formatID(stats.nw_rules)}`);
+  }
 }
 
 module.exports = VmService;
