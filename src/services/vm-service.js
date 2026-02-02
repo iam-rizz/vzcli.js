@@ -137,14 +137,20 @@ class VmService {
         }
       }
 
+      const osName = vm.os_name || vm.osname || vm.distro || 'Unknown';
+      const ramMB = vm.ram || vm.memory || 0;
+      const diskGB = vm.space || vm.disk || vm.hdd || 0;
+      const bandwidthGB = vm.bandwidth || vm.bw || 0;
+
       return {
         vpsid: vm.vpsid,
         hostname: vm.hostname || `vm-${vm.vpsid}`,
         status: vm.status === 1 ? 'up' : 'down',
         ip: ipv4 || vm.ip || 'N/A',
-        os: vm.os || 'Unknown',
-        ram: vm.ram || 0,
-        disk: vm.disk || 0,
+        os: osName,
+        ram: ramMB,
+        disk: diskGB,
+        bandwidth: bandwidthGB,
         cpu: vm.cpu || 0,
         uptime: vm.uptime || 0
       };
@@ -164,7 +170,10 @@ class VmService {
       Hostname: this.output.formatHostname(vm.hostname),
       Status: this.output.formatVMStatus(vm.status),
       IP: this.output.formatIP(vm.ip),
-      OS: vm.os
+      OS: vm.os,
+      RAM: this.output.formatSize(vm.ram, 'MB'),
+      Disk: this.output.formatSize(vm.disk, 'GB'),
+      BW: this.output.formatSize(vm.bandwidth, 'GB')
     }));
 
     this.output.table(tableData);
