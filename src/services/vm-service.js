@@ -138,6 +138,22 @@ class VmService {
       }
 
       const osName = vm.os_name || vm.osname || vm.distro || 'Unknown';
+      
+      const osMapping = {
+        "almalinux-8-x86_64": "AlmaLinux 8",
+        "almalinux-8.8-x86_64": "AlmaLinux 8.8",
+        "almalinux-9-x86_64": "AlmaLinux 9",
+        "centos-7-x86_64": "CentOS 7",
+        "debian-10.0-x86_64": "Debian 10",
+        "debian-11.0-x86_64": "Debian 11",
+        "debian-12-x86_64": "Debian 12",
+        "debian-13-x86_64": "Debian 13",
+        "ubuntu-20.04-x86_64": "Ubuntu 20.04",
+        "ubuntu-22.04-x86_64": "Ubuntu 22.04",
+        "ubuntu-24.04-x86_64": "Ubuntu 24.04"
+      };
+      
+      const friendlyOsName = osMapping[osName] || osName;
       const ramMB = vm.ram || vm.memory || 0;
       const diskGB = vm.space || vm.disk || vm.hdd || 0;
       const bandwidthGB = vm.bandwidth || vm.bw || 0;
@@ -147,7 +163,7 @@ class VmService {
         hostname: vm.hostname || `vm-${vm.vpsid}`,
         status: vm.status === 1 ? 'up' : 'down',
         ip: ipv4 || vm.ip || 'N/A',
-        os: osName,
+        os: friendlyOsName,
         ram: ramMB,
         disk: diskGB,
         bandwidth: bandwidthGB,
