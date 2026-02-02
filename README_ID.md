@@ -18,6 +18,7 @@ Tool CLI untuk mengelola domain/port forwarding VPS Virtualizor dengan dukungan 
 |-------|-----------|
 | **Dukungan Multi-Host** | Kelola beberapa server Virtualizor dari satu antarmuka |
 | **UI Terminal Kaya** | Output cantik dengan warna, tabel, spinner, dan progress bar |
+| **Statistik Penggunaan VM** | Monitoring resource real-time dengan progress bar visual |
 | **Kredensial Aman** | Integrasi OS keyring dengan fallback enkripsi AES |
 | **Tes Koneksi** | Tes semua host dengan tampilan waktu respons |
 | **Operasi CRUD** | Manajemen aturan forwarding lengkap |
@@ -70,7 +71,10 @@ vzcli config test
 # 3. List VM
 vzcli vm list
 
-# 4. Tambah aturan forwarding (interaktif)
+# 4. Cek statistik penggunaan VM
+vzcli vm usage
+
+# 5. Tambah aturan forwarding (interaktif)
 vzcli forward add -i
 ```
 
@@ -135,6 +139,8 @@ vzcli -H production forward list --vpsid 103
 
 ### 2. Manajemen Virtual Machine
 
+#### List Virtual Machine
+
 ```bash
 # List semua VM
 vzcli vm list
@@ -153,6 +159,37 @@ vzcli vm list --all-hosts --status up
 vzcli vm list --json
 vzcli vm list --status up --json
 ```
+
+#### Statistik Penggunaan VM
+
+```bash
+# Tampilkan statistik penggunaan untuk semua VM
+vzcli vm usage
+
+# Filter berdasarkan status
+vzcli vm usage --status up     # Hanya VM yang berjalan
+vzcli vm usage --status down   # Hanya VM yang mati
+
+# Tampilkan penggunaan dari semua host
+vzcli vm usage --all-hosts
+
+# Tampilkan penggunaan detail untuk VM spesifik
+vzcli vm usage --vpsid 105
+
+# Output JSON (untuk scripting)
+vzcli vm usage --json
+vzcli vm usage --vpsid 105 --json
+
+# Gunakan host spesifik
+vzcli vm usage --host production
+```
+
+**Tampilan Statistik Penggunaan:**
+- **Penggunaan RAM**: Progress bar dengan persentase dan used/total dalam GB
+- **Penggunaan Disk**: Progress bar dengan persentase dan used/total dalam GB  
+- **Penggunaan Bandwidth**: Progress bar dengan persentase dan used/total dalam TB
+- **Aturan Port Forwarding**: Jumlah aturan forwarding yang aktif
+- **Bar berwarna**: Hijau (<50%), Kuning (50-80%), Merah (>80%)
 
 ### 3. Manajemen Port Forwarding
 
@@ -347,17 +384,23 @@ vzcli config add myserver \
 # 2. Cek VM yang tersedia
 vzcli vm list --status up
 
-# 3. Tambah HTTP forwarding
+# 3. Monitor penggunaan resource VM
+vzcli vm usage --status up
+
+# 4. Tambah HTTP forwarding
 vzcli forward add -v 103 -p HTTP -d mysite.com
 
-# 4. Tambah HTTPS forwarding
+# 5. Tambah HTTPS forwarding
 vzcli forward add -v 103 -p HTTPS -d mysite.com
 
-# 5. Tambah akses SSH
+# 6. Tambah akses SSH
 vzcli forward add -v 103 -p TCP -d 45.158.126.xxx -s 2222 -t 22
 
-# 6. Verifikasi aturan
+# 7. Verifikasi aturan
 vzcli forward list -v 103
+
+# 8. Cek penggunaan VM setelah setup
+vzcli vm usage --vpsid 103
 ```
 
 ### Backup dan Restore
@@ -384,8 +427,12 @@ vzcli config test
 # List VM dari semua host
 vzcli vm list --all-hosts
 
+# Cek statistik penggunaan dari semua host
+vzcli vm usage --all-hosts
+
 # Operasi pada host spesifik
 vzcli -H staging vm list
+vzcli -H staging vm usage
 vzcli -H production forward list -v 103
 ```
 

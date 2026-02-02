@@ -18,6 +18,7 @@ CLI tool for managing Virtualizor VPS domain/port forwarding with multi-host sup
 |---------|-------------|
 | **Multi-Host Support** | Manage multiple Virtualizor servers from a single interface |
 | **Rich Terminal UI** | Beautiful output with colors, tables, spinners, and progress bars |
+| **VM Usage Statistics** | Real-time resource monitoring with visual progress bars |
 | **Secure Credentials** | OS keyring integration with AES encryption fallback |
 | **Connection Testing** | Test all hosts with response time display |
 | **CRUD Operations** | Complete forwarding rule management |
@@ -70,7 +71,10 @@ vzcli config test
 # 3. List VMs
 vzcli vm list
 
-# 4. Add forwarding rule (interactive)
+# 4. Check VM usage statistics
+vzcli vm usage
+
+# 5. Add forwarding rule (interactive)
 vzcli forward add -i
 ```
 
@@ -135,6 +139,8 @@ vzcli -H production forward list --vpsid 103
 
 ### 2. Virtual Machine Management
 
+#### List Virtual Machines
+
 ```bash
 # List all VMs
 vzcli vm list
@@ -153,6 +159,37 @@ vzcli vm list --all-hosts --status up
 vzcli vm list --json
 vzcli vm list --status up --json
 ```
+
+#### VM Usage Statistics
+
+```bash
+# Show usage statistics for all VMs
+vzcli vm usage
+
+# Filter by status
+vzcli vm usage --status up     # Only running VMs
+vzcli vm usage --status down   # Only stopped VMs
+
+# Show usage from all hosts
+vzcli vm usage --all-hosts
+
+# Show detailed usage for specific VM
+vzcli vm usage --vpsid 105
+
+# JSON output (for scripting)
+vzcli vm usage --json
+vzcli vm usage --vpsid 105 --json
+
+# Use specific host
+vzcli vm usage --host production
+```
+
+**Usage Statistics Display:**
+- **RAM Usage**: Progress bar with percentage and used/total in GB
+- **Disk Usage**: Progress bar with percentage and used/total in GB  
+- **Bandwidth Usage**: Progress bar with percentage and used/total in TB
+- **Port Forwarding Rules**: Count of active forwarding rules
+- **Color-coded bars**: Green (<50%), Yellow (50-80%), Red (>80%)
 
 ### 3. Port Forwarding Management
 
@@ -347,17 +384,23 @@ vzcli config add myserver \
 # 2. Check available VMs
 vzcli vm list --status up
 
-# 3. Add HTTP forwarding
+# 3. Monitor VM resource usage
+vzcli vm usage --status up
+
+# 4. Add HTTP forwarding
 vzcli forward add -v 103 -p HTTP -d mysite.com
 
-# 4. Add HTTPS forwarding
+# 5. Add HTTPS forwarding
 vzcli forward add -v 103 -p HTTPS -d mysite.com
 
-# 5. Add SSH access
+# 6. Add SSH access
 vzcli forward add -v 103 -p TCP -d 45.158.126.xxx -s 2222 -t 22
 
-# 6. Verify rules
+# 7. Verify rules
 vzcli forward list -v 103
+
+# 8. Check VM usage after setup
+vzcli vm usage --vpsid 103
 ```
 
 ### Backup and Restore
@@ -384,8 +427,12 @@ vzcli config test
 # List VMs from all hosts
 vzcli vm list --all-hosts
 
+# Check usage statistics from all hosts
+vzcli vm usage --all-hosts
+
 # Operations on specific host
 vzcli -H staging vm list
+vzcli -H staging vm usage
 vzcli -H production forward list -v 103
 ```
 
