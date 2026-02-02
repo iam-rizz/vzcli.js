@@ -8,6 +8,19 @@
   <img src="https://img.shields.io/npm/dw/vzcli" alt="npm Downloads">
 </p>
 
+### Rekomendasi VPS, NAT VPS (Virtualizor) & Hosting
+
+<div align="center">
+
+Butuh VPS untuk testing script ini? **[HostData.id](https://hostdata.id)** menyediakan berbagai pilihan hosting terpercaya dengan harga terjangkau.
+
+[![HostData.id](https://img.shields.io/badge/HostData.id-VPS%20Terpercaya-FF6B35?style=flat&logo=server&logoColor=white)](https://hostdata.id) 
+[![NAT VPS](https://img.shields.io/badge/NAT%20VPS-Mulai%2015K/bulan-00C851?style=flat)](https://hostdata.id/nat-vps)
+[![VPS Indonesia](https://img.shields.io/badge/VPS%20Indonesia-Mulai%20200K/bulan-007ACC?style=flat&logo=server)](https://hostdata.id/vps-indonesia)
+[![Dedicated Server](https://img.shields.io/badge/Dedicated%20Server-Enterprise%20Ready-8B5CF6?style=flat&logo=server)](https://hostdata.id/dedicated-server)
+
+</div>
+
 Tool CLI untuk mengelola domain/port forwarding VPS Virtualizor dengan dukungan multi-host dan antarmuka terminal yang kaya.
 
 **[🇺🇸 Read in English](README.md)**
