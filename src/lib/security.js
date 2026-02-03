@@ -1,5 +1,5 @@
-const crypto = require('crypto');
-const os = require('os');
+const crypto = require('node:crypto');
+const os = require('node:os');
 
 let keytar;
 try {
@@ -9,8 +9,9 @@ try {
 }
 
 class Security {
+  serviceName = 'vzcli';
+  
   constructor() {
-    this.serviceName = 'vzcli';
     this.machineKey = this.generateMachineKey();
   }
 
@@ -61,22 +62,23 @@ class Security {
 
   encrypt(text) {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes-256-gcm', this.machineKey);
+    const key = this.machineKey.subarray(0, 32); // Ensure 32 bytes for AES-256
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    return iv.toString('hex') + ':' + encrypted;
   }
 
   decrypt(encryptedText) {
     try {
       const parts = encryptedText.split(':');
-      const iv = Buffer.from(parts[0], 'hex');
-      const authTag = Buffer.from(parts[1], 'hex');
-      const encrypted = parts[2];
+      if (parts.length !== 2) return null;
       
-      const decipher = crypto.createDecipher('aes-256-gcm', this.machineKey);
-      decipher.setAuthTag(authTag);
+      const iv = Buffer.from(parts[0], 'hex');
+      const encrypted = parts[1];
+      const key = this.machineKey.subarray(0, 32); // Ensure 32 bytes for AES-256
+      
+      const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
       let decrypted = decipher.update(encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
       return decrypted;

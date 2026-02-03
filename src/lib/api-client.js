@@ -35,7 +35,7 @@ class ApiClient {
           timeout: this.timeout,
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': 'vzcli/1.0.1'
+            'User-Agent': 'vzcli/1.0.3'
           },
           validateStatus: () => true
         });
@@ -44,13 +44,14 @@ class ApiClient {
         response = await axios.get(url, {
           timeout: this.timeout,
           headers: {
-            'User-Agent': 'vzcli/1.0.1'
+            'User-Agent': 'vzcli/1.0.3'
           },
           validateStatus: () => true
         });
       }
 
       if (response.data) {
+        // Check for authentication errors
         if (response.data.error && typeof response.data.error === 'string' && response.data.error.includes('authentication')) {
           return {
             success: false,
@@ -59,6 +60,24 @@ class ApiClient {
           };
         }
 
+        // Check for specific error object
+        if (response.data.error && typeof response.data.error === 'object') {
+          const errorMessages = [];
+          for (const [key, value] of Object.entries(response.data.error)) {
+            if (value && value !== null && key !== 'action') {
+              errorMessages.push(value);
+            }
+          }
+          if (errorMessages.length > 0) {
+            return {
+              success: false,
+              error: errorMessages.join(', '),
+              data: response.data
+            };
+          }
+        }
+
+        // Check for success indicators
         if (response.data.done && !response.data.error) {
           return {
             success: true,
@@ -69,10 +88,16 @@ class ApiClient {
             success: true,
             data: response.data
           };
-        } else {
+        } else if (response.data.error) {
           return {
             success: false,
             error: response.data.error || 'Unknown API error',
+            data: response.data
+          };
+        } else {
+          // If no explicit error but no success indicators either, assume success for some operations
+          return {
+            success: true,
             data: response.data
           };
         }
@@ -131,48 +156,52 @@ class ApiClient {
 
   async addForwardingRule(vpsid, protocol, srcHostname, srcPort, destIp, destPort) {
     const data = qs.stringify({
+      svs: vpsid,
       vdf_action: 'addvdf',
-      protocol: protocol.toLowerCase(),
+      protocol: protocol.toUpperCase(),
       src_hostname: srcHostname,
       src_port: srcPort.toString(),
       dest_ip: destIp,
       dest_port: destPort.toString()
     });
 
-    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
+    return await this.makeRequest('managevdf', 'POST', data);
   }
 
   async editForwardingRule(vpsid, vdfid, protocol, srcHostname, srcPort, destIp, destPort) {
     const data = qs.stringify({
+      svs: vpsid,
       vdf_action: 'editvdf',
       vdfid: vdfid,
-      protocol: protocol.toLowerCase(),
+      protocol: protocol.toUpperCase(),
       src_hostname: srcHostname,
       src_port: srcPort.toString(),
       dest_ip: destIp,
       dest_port: destPort.toString()
     });
 
-    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
+    return await this.makeRequest('managevdf', 'POST', data);
   }
 
   async deleteForwardingRule(vpsid, vdfid) {
     const data = qs.stringify({
+      svs: vpsid,
       vdf_action: 'delvdf',
       ids: vdfid.toString()
     });
 
-    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
+    return await this.makeRequest('managevdf', 'POST', data);
   }
 
   async deleteMultipleForwardingRules(vpsid, vdfids) {
     const vdfidString = Array.isArray(vdfids) ? vdfids.join(',') : vdfids;
     const data = qs.stringify({
+      svs: vpsid,
       vdf_action: 'delvdf',
       ids: vdfidString
     });
 
-    return await this.makeRequest('managevdf', 'POST', data, { svs: vpsid });
+    return await this.makeRequest('managevdf', 'POST', data);
   }
 
   async getVMRamUsage(vpsid) {
